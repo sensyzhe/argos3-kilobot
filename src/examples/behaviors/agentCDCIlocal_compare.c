@@ -119,10 +119,10 @@ motion_t backup_motion=STOP;
 
 float RotSpeed=38.0;
 
-uint8_t GPS_maxcell=16;
+uint8_t GPS_maxcell=100;
 uint8_t minDist=4;
 
-float GPS_To_Meter=1/16.0;
+float GPS_To_Meter=1/100.0;
 float Robot_FoV=0.0;
 
 // model parameter
@@ -473,12 +473,33 @@ void update_virtual_global_communication() {
 /*-------------------------------------------------------------------*/
 void message_rx( message_t *msg, distance_measurement_t *d ) {
     /** ARK MESSAGE **/
+    if(msg->type==100)
+    {
+        int id1 = msg->data[0];
+        if (id1 == kilo_uid){
+            printf("x: %d, y: %d, orientation: %f, on_option: %d\n", msg->data[1], msg->data[2], (float)(msg->data[3])*12, msg->data[4]);
+            printf("goal %d,%d\n", Goal_GPS_X, Goal_GPS_Y);
+            Robot_GPS_X = msg->data[1];
+            Robot_GPS_Y = msg->data[2];
+            Robot_orientation = (int)(msg->data[3])*12;
+            on_option = msg->data[4];
+            new_sa_msg_gps = true;
+        }
+    }
     if (msg->type == 0) {
         // unpack message
         int id1 = msg->data[0];
         int id2 = msg->data[3];
         int id3 = msg->data[6];
-
+        // printf("d0:%d\n",msg->data[0]);
+        // printf("d1:%d\n",msg->data[1]);
+        // printf("d2:%d\n",msg->data[2]);
+        // printf("d3:%d\n",msg->data[3]);
+        // printf("d4:%d\n",msg->data[4]);
+        // printf("d5:%d\n",msg->data[5]);
+        // printf("d6:%d\n",msg->data[6]);
+        // printf("d7:%d\n",msg->data[7]);
+        // printf("d8:%d\n",msg->data[8]);
         if (id1 == kilo_uid)
         {
             // unpack type
@@ -1032,13 +1053,6 @@ void loop() {
         }
 
         GoToGoalLocation();
-
-        // print gps
-        if(kilo_uid==1)
-            {
-                printf("GPS: %d %d\n", Robot_GPS_X, Robot_GPS_Y);
-                }
-
 
         update_commitment();
         broadcast();

@@ -536,6 +536,7 @@ void CArk::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
 
         /* Flag for existance of message to send*/
         bool bMessageToSend=false;
+        bool gpsMessage = false;
 
         /*Create ARK-type messages variables*/
         m_tArkKilobotMessage tKilobotMessage,tEmptyMessage,tMessage;
@@ -614,13 +615,13 @@ void CArk::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
             tRequiresGPS[GetKilobotId(c_kilobot_entity)]=false;
 
             /*  Set the message sending flag to True */
-            bMessageToSend=true;
+            gpsMessage=true;
 
             tLastTimeMessagedGPS[GetKilobotId(c_kilobot_entity)] = m_fTimeInSeconds;
         }
 
         /* Send the message to the kilobot using the ARK messaging protocol (addressing 3 kilobots per one standard kilobot message)*/
-        if(bMessageToSend){
+        if(bMessageToSend&&!gpsMessage){
 
             for (int i = 0; i < 9; ++i) {
                 m_tMessages[GetKilobotId(c_kilobot_entity)].data[i]=0;
@@ -654,6 +655,51 @@ void CArk::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
             //        LOG << " data[2]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[2] << std::endl;
 
             /* Sending the message */
+            GetSimulator().GetMedium<CKilobotCommunicationMedium>("kilocomm").SendOHCMessageTo(c_kilobot_entity,&m_tMessages[GetKilobotId(c_kilobot_entity)]);
+        }
+        else if(gpsMessage)
+        {
+            for (int i = 0; i < 9; ++i) {
+                m_tMessages[GetKilobotId(c_kilobot_entity)].data[i]=0;
+            }
+            m_tMessages[GetKilobotId(c_kilobot_entity)].type=100;
+
+            /* On option?*/
+            UInt8 on_option=0;
+            CDegrees KB_Orientation = ToDegrees( GetKilobotOrientation(c_kilobot_entity) );
+            KB_Orientation.UnsignedNormalize();
+
+            if( tEncounteredOption[GetKilobotId(c_kilobot_entity)] != -1)
+            {
+                if(m_fTimeInSeconds>=m_tOptions[tEncounteredOption[GetKilobotId(c_kilobot_entity)]].AppearanceTime && (m_fTimeInSeconds<m_tOptions[tEncounteredOption[GetKilobotId(c_kilobot_entity)]].DisappearanceTime || m_tOptions[tEncounteredOption[GetKilobotId(c_kilobot_entity)]].DisappearanceTime<=0))
+                {
+                    on_option= UInt8(1);
+                }
+            }
+
+            // Prepare an empty ARK-type message to fill the gap in the full kilobot message
+            tEmptyMessage.m_sID=1023;
+            tEmptyMessage.m_sType=0;
+            tEmptyMessage.m_sData=0;
+
+            // Fill the kilobot message by the ARK-type messages
+
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[0] = GetKilobotId(c_kilobot_entity);                                                // id
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[1] = (UInt8)PositionToGPS(GetKilobotPosition(c_kilobot_entity)).GetX();             // gps x
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[2] = (UInt8)PositionToGPS(GetKilobotPosition(c_kilobot_entity)).GetY();             // gps y
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[3] = ( (UInt8) (KB_Orientation.GetValue()/12.0) ); // orientation
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[4] = on_option;                                                                     // empty
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[5] = 0;
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[6] = 0;
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[7] = 0;
+            m_tMessages[GetKilobotId(c_kilobot_entity)].data[8] = 0;
+
+            //        LOG << " data[0]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[0] << std::endl;
+            //        LOG << " data[1]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[1] << std::endl;
+            //        LOG << " data[2]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[2] << std::endl;
+
+            /* Sending the message */
+            gpsMessage=false;
             GetSimulator().GetMedium<CKilobotCommunicationMedium>("kilocomm").SendOHCMessageTo(c_kilobot_entity,&m_tMessages[GetKilobotId(c_kilobot_entity)]);
         }
         else{

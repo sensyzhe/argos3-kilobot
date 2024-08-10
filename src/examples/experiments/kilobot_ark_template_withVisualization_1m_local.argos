@@ -57,7 +57,7 @@
         ohcfrequency="1"
         quorum="1.7"
         timeforonemessage="10"
-        gps_cells="16"
+        gps_cells="100"
         quality_variance="1.1"
         Trobot="T_ROBOT">
     </variables>
