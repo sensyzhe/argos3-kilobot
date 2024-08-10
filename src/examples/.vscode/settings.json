@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "kilolib.h": "c",
+        "iosfwd": "cpp"
+    }
+}

@@ -1,6 +1,5 @@
-#ifndef TEST_DEBUG_H
-#define TEST_DEBUG_H
-
+#ifndef AGENTCDCILOCAL_H
+#define AGENTCDCILOCAL_H
 #ifdef ARGOS_simulator_BUILD
 
 #ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
@@ -15,7 +14,7 @@ extern "C" {
 // The name 'debug_info_t' is mandatory
 // The content of the struct is whatever you want
 typedef struct {
-   int gradient; // value of robot gradient
+   int commitement; // value of robot gradient
 } debug_info_t;
 //
 ////////////////////////////////////////
@@ -26,4 +25,4 @@ typedef struct {
 
 #endif // ARGOS_simulator_BUILD
 
-#endif // TEST_DEBUG_H
+#endif // AGENTCDCILOCAL

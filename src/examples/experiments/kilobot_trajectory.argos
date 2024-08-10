@@ -23,7 +23,7 @@
         <kilobot_led implementation="default" />
       </actuators>
       <sensors />
-      <params behavior="build/examples/behaviors/simple_movement" />
+      <params behavior="build/examples/behaviors/agentCDCIlocal_compare" />
     </kilobot_controller>
 
   </controllers>
