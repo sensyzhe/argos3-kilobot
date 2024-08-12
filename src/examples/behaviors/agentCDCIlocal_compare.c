@@ -26,6 +26,8 @@ typedef enum {
     true = 1,
 } bool;
 
+extern float communication_volume; 
+
 /* Flag for successful message sent */
 bool message_sent = false;
 
@@ -477,8 +479,7 @@ void message_rx( message_t *msg, distance_measurement_t *d ) {
     {
         int id1 = msg->data[0];
         if (id1 == kilo_uid){
-            printf("x: %d, y: %d, orientation: %f, on_option: %d\n", msg->data[1], msg->data[2], (float)(msg->data[3])*12, msg->data[4]);
-            printf("goal %d,%d\n", Goal_GPS_X, Goal_GPS_Y);
+            
             Robot_GPS_X = msg->data[1];
             Robot_GPS_Y = msg->data[2];
             Robot_orientation = (int)(msg->data[3])*12;
@@ -486,20 +487,24 @@ void message_rx( message_t *msg, distance_measurement_t *d ) {
             new_sa_msg_gps = true;
         }
     }
+    if(msg->type==101)
+    {
+        int id = msg->data[4];
+        if(id == kilo_uid)
+        {
+            discovered_option_GPS_X = msg->data[0];
+            discovered_option_GPS_Y = msg->data[1];
+            discovered_option_mean_quality = msg->data[2];
+            on_option = msg->data[3];
+            new_sa_msg_discovery = true;
+        
+        }
+    }
     if (msg->type == 0) {
         // unpack message
         int id1 = msg->data[0];
         int id2 = msg->data[3];
         int id3 = msg->data[6];
-        // printf("d0:%d\n",msg->data[0]);
-        // printf("d1:%d\n",msg->data[1]);
-        // printf("d2:%d\n",msg->data[2]);
-        // printf("d3:%d\n",msg->data[3]);
-        // printf("d4:%d\n",msg->data[4]);
-        // printf("d5:%d\n",msg->data[5]);
-        // printf("d6:%d\n",msg->data[6]);
-        // printf("d7:%d\n",msg->data[7]);
-        // printf("d8:%d\n",msg->data[8]);
         if (id1 == kilo_uid)
         {
             // unpack type
@@ -676,6 +681,15 @@ void message_rx( message_t *msg, distance_measurement_t *d ) {
         received_option_GPS_X = msg->data[0];
         received_option_GPS_Y = msg->data[1];
         received_message = (bool) msg->data[2];
+        int sender_GPS_X = msg->data[4];
+        int sender_GPS_Y = msg->data[5];
+        float distance = sqrt((Robot_GPS_X-sender_GPS_X)*(Robot_GPS_X-sender_GPS_X)+(Robot_GPS_Y-sender_GPS_Y)*(Robot_GPS_Y-sender_GPS_Y));
+        
+        printf("%d\n", kilo_uid);
+
+        communication_volume+=distance;
+        
+        printf("%f\n", communication_volume);
     }
 }
 
@@ -977,6 +991,9 @@ void broadcast() {
                 message.data[1] = my_option_GPS_Y;
                 message.data[2] = 1;
                 message.data[3] = kilo_uid;
+                message.data[4] = Robot_GPS_X;
+                message.data[5] = Robot_GPS_Y;
+
                 message.type    = AGENT_MSG;
                 message.crc     = message_crc(&message);
 
@@ -1054,6 +1071,7 @@ void loop() {
 
         GoToGoalLocation();
 
+        
         update_commitment();
         broadcast();
 
@@ -1109,7 +1127,6 @@ int main()
     // struct.
     debug_info_create();
     ////////////////////////////////////////
-
     kilo_start(setup, loop);
     return 0;
 }

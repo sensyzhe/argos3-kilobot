@@ -537,6 +537,9 @@ void CArk::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
         /* Flag for existance of message to send*/
         bool bMessageToSend=false;
         bool gpsMessage = false;
+        bool discoveryMessage = false;
+
+        message_t discovery_m;
 
         /*Create ARK-type messages variables*/
         m_tArkKilobotMessage tKilobotMessage,tEmptyMessage,tMessage;
@@ -563,6 +566,14 @@ void CArk::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
                 tKilobotMessage.m_sType = ( (UInt8) m_tOptions[ tEncounteredOption[GetKilobotId(c_kilobot_entity)] ].GPS_position.GetX() ) & 0x0F;
                 tKilobotMessage.m_sData = ( (UInt8) m_tOptions[ tEncounteredOption[GetKilobotId(c_kilobot_entity)] ].GPS_position.GetY() ) << 6 | (UInt8) m_tOptions[ tEncounteredOption[GetKilobotId(c_kilobot_entity)] ].quality ;
 
+                discovery_m.data[0]=( (UInt8) m_tOptions[ tEncounteredOption[GetKilobotId(c_kilobot_entity)] ].GPS_position.GetX() );
+                discovery_m.data[1]=( (UInt8) m_tOptions[ tEncounteredOption[GetKilobotId(c_kilobot_entity)] ].GPS_position.GetY() );
+                discovery_m.data[2]=(UInt8) m_tOptions[ tEncounteredOption[GetKilobotId(c_kilobot_entity)] ].quality;
+                discovery_m.data[3]=on_option;
+                discovery_m.data[4]=GetKilobotId(c_kilobot_entity);
+
+                LOG << " dwerearew" << ( (UInt8) m_tOptions[ tEncounteredOption[GetKilobotId(c_kilobot_entity)] ].GPS_position.GetX() )<< std::endl;
+                
                 /* Reset the state of the robots */
                 tEncounteredOption[GetKilobotId(c_kilobot_entity)]=-1;
 
@@ -573,7 +584,7 @@ void CArk::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
 
 
                 /*  Set the message sending flag to True */
-                bMessageToSend=true;
+                discoveryMessage=true;
 
                 tLastTimeMessagedDiscovery[GetKilobotId(c_kilobot_entity)] = m_fTimeInSeconds;
             }
@@ -621,12 +632,21 @@ void CArk::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
         }
 
         /* Send the message to the kilobot using the ARK messaging protocol (addressing 3 kilobots per one standard kilobot message)*/
-        if(bMessageToSend&&!gpsMessage){
+        if(discoveryMessage && !gpsMessage){
+            UInt8 on_option=0;
+            discoveryMessage=false;
 
+            if( tEncounteredOption[GetKilobotId(c_kilobot_entity)] != -1)
+            {
+                if(m_fTimeInSeconds>=m_tOptions[tEncounteredOption[GetKilobotId(c_kilobot_entity)]].AppearanceTime && (m_fTimeInSeconds<m_tOptions[tEncounteredOption[GetKilobotId(c_kilobot_entity)]].DisappearanceTime || m_tOptions[tEncounteredOption[GetKilobotId(c_kilobot_entity)]].DisappearanceTime<=0))
+                {
+                    on_option= 1;
+                }
+            }
             for (int i = 0; i < 9; ++i) {
                 m_tMessages[GetKilobotId(c_kilobot_entity)].data[i]=0;
             }
-            m_tMessages[GetKilobotId(c_kilobot_entity)].type=0;
+            m_tMessages[GetKilobotId(c_kilobot_entity)].type=101;
 
             // Prepare an empty ARK-type message to fill the gap in the full kilobot message
             tEmptyMessage.m_sID=1023;
@@ -635,24 +655,17 @@ void CArk::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
 
             // Fill the kilobot message by the ARK-type messages
 
-            for (int i = 0; i < 3; ++i) {
+            
 
-                if(i==0){
-                    tMessage=tKilobotMessage;
-                } else{
-                    tMessage=tEmptyMessage;
-                }
+                m_tMessages[GetKilobotId(c_kilobot_entity)].data[0] = discovery_m.data[0];
+                m_tMessages[GetKilobotId(c_kilobot_entity)].data[1] = discovery_m.data[1];
+                m_tMessages[GetKilobotId(c_kilobot_entity)].data[2] = discovery_m.data[2];
+                m_tMessages[GetKilobotId(c_kilobot_entity)].data[3] = discovery_m.data[3];
+                m_tMessages[GetKilobotId(c_kilobot_entity)].data[4] = discovery_m.data[4];
 
-                m_tMessages[GetKilobotId(c_kilobot_entity)].data[i*3] = (tMessage.m_sID >> 2);
-                m_tMessages[GetKilobotId(c_kilobot_entity)].data[1+i*3] = (tMessage.m_sID << 6);
-                m_tMessages[GetKilobotId(c_kilobot_entity)].data[1+i*3] = m_tMessages[GetKilobotId(c_kilobot_entity)].data[1+i*3] | (tMessage.m_sType << 2);
-                m_tMessages[GetKilobotId(c_kilobot_entity)].data[1+i*3] = m_tMessages[GetKilobotId(c_kilobot_entity)].data[1+i*3] | (tMessage.m_sData >> 8);
-                m_tMessages[GetKilobotId(c_kilobot_entity)].data[2+i*3] = tMessage.m_sData;
-            }
-
-            //        LOG << " data[0]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[0] << std::endl;
-            //        LOG << " data[1]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[1] << std::endl;
-            //        LOG << " data[2]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[2] << std::endl;
+                   LOG << " data[0]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[0] << std::endl;
+                   LOG << " data[1]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[1] << std::endl;
+                   LOG << " data[2]=" << m_tMessages[GetKilobotId(c_kilobot_entity)].data[2] << std::endl;
 
             /* Sending the message */
             GetSimulator().GetMedium<CKilobotCommunicationMedium>("kilocomm").SendOHCMessageTo(c_kilobot_entity,&m_tMessages[GetKilobotId(c_kilobot_entity)]);

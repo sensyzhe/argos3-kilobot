@@ -26,3 +26,5 @@ typedef struct {
 #endif // ARGOS_simulator_BUILD
 
 #endif // AGENTCDCILOCAL
+
+float communication_volume=0;
